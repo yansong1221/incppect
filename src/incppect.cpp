@@ -7,7 +7,7 @@
 
 #include "common.h"
 
-#include "App.h" // uWebSockets
+#include <uwebsockets/App.h> // uWebSockets
 
 #include <algorithm>
 #include <chrono>
@@ -63,7 +63,7 @@ struct Incppect<SSL>::Impl {
         int32_t clientId = 0;
 
         uWS::Loop * mainLoop = nullptr;
-        uWS::WebSocket<SSL, true> * ws = nullptr;
+        uWS::WebSocket<SSL, true, PerSocketData> * ws = nullptr;
     };
 
     inline bool hasExt(std::string_view file, std::string_view ext) {
@@ -81,11 +81,11 @@ struct Incppect<SSL>::Impl {
             my_printf("[incppect] running instance. serving %s from '%s'\n", kProtocol, parameters.httpRoot.c_str());
         }
 
-        typename uWS::TemplatedApp<SSL>::WebSocketBehavior wsBehaviour;
+        typename uWS::TemplatedApp<SSL>::WebSocketBehavior<PerSocketData> wsBehaviour;
         wsBehaviour.compression = uWS::SHARED_COMPRESSOR;
         wsBehaviour.maxPayloadLength = parameters.maxPayloadLength_bytes;
         wsBehaviour.idleTimeout = parameters.tIdleTimeout_s;
-        wsBehaviour.open = [&](auto * ws, auto * /*req*/) {
+        wsBehaviour.open = [&](auto * ws) {
             static int32_t uniqueId = 1;
             ++uniqueId;
 
@@ -210,10 +210,10 @@ struct Incppect<SSL>::Impl {
                 my_printf("[incppect] drain: buffered amount = %d\n", ws->getBufferedAmount());
             }
         };
-        wsBehaviour.ping = [](auto * /*ws*/) {
+        wsBehaviour.ping = [](auto * /*ws*/, std::string_view /*message*/) {
 
         };
-        wsBehaviour.pong = [](auto * /*ws*/) {
+        wsBehaviour.pong = [](auto * /*ws*/, std::string_view /*message*/) {
 
         };
         wsBehaviour.close = [this](auto * ws, int /*code*/, std::string_view /*message*/) {
@@ -231,7 +231,7 @@ struct Incppect<SSL>::Impl {
         std::unique_ptr<uWS::TemplatedApp<SSL>> app;
 
         if constexpr (SSL) {
-            us_socket_context_options_t ssl_options = {};
+            uWS::SocketContextOptions ssl_options = {};
 
             ssl_options.key_file_name = parameters.sslKey.data();
             ssl_options.cert_file_name = parameters.sslCert.data();

@@ -17,12 +17,12 @@ option(INCPPECT_NO_SSL  "Disable SSL support" OFF)
 
 find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
+find_package(unofficial-uwebsockets CONFIG REQUIRED)
 
 if (APPLE)
     find_package(LibUV REQUIRED)
 endif ()
 
-add_subdirectory(third_party)
 add_subdirectory(src)
 
 if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
